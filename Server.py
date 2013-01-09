@@ -13,8 +13,6 @@ class ClientChannel(PodSixNet.Channel.Channel):
 			self._server.boardh[y][x] = True
 		else:
 			self._server.boardv[y][x] = True
-		# Check for any wins
-		# Loop through all of the squares
 		if self._server.turn==0:
 			self._server.turn=1
 			self._server.player1.Send(data)
@@ -34,19 +32,22 @@ class BoxesServer(PodSixNet.Server.Server):
 		self.player0=None
 		self.player1=None
 	def loop(self):
+		print self.turn
+		# Check for any wins
+		# Loop through all of the squares
 		for y in range(6):
 			for x in range(6): 
 				if self.boardh[y][x] and self.boardv[y][x] and self.boardh[y+1][x] and self.boardv[y][x+1] and not self.winning[x][y]:
 					if self.turn==0:
-						print "2"
 						self.winning[x][y]=2
 						self.player1.Send({"action":"win", "x":x, "y":y})
 						self.player0.Send({"action":"lose", "x":x, "y":y})
+						self.turn = 1
 					else:
-						print "1"
 						self.winning[x][y]=1
 						self.player0.Send({"action":"win", "x":x, "y":y})
 						self.player1.Send({"action":"lose", "x":x, "y":y})
+						self.turn = 0
 		self.Pump()
 	def Connected(self, channel, addr):
 		if self.player0==None:

@@ -18,6 +18,7 @@ coollineh=pygame.transform.rotate(pygame.image.load("coolline.png"), -90)
 board=[]
 win = [[0 for x in range(6)] for y in range(6)]
 turn = True
+print "0:", 10, turn
 boardh = [[False for x in range(6)] for y in range(7)]
 boardv = [[False for x in range(7)] for y in range(6)]
 #usage: boardX[x][y]
@@ -32,18 +33,21 @@ while 1:
 		break
 if num==0:
 	turn=True
+	print "0a:", num, turn
 	marker = greenplayer
 	othermarker = blueplayer
 else:
 	turn=False
+	print "0b:", num, turn
 	marker=blueplayer
 	othermarker = greenplayer
 while 1:
 	screen.fill(0)
-	clock.tick(48)
+	clock.tick(60)
 	c.Loop()
 	if c.input1["action"]=="place":
 		turn=True
+		print "1:", num, turn
 		x = c.input1["x"]
 		y = c.input1["y"]
 		hv = c.input1["hv"]
@@ -52,23 +56,28 @@ while 1:
 		else:
 			boardv[y][x]=True
 		c.input1 = {"action":"None"}
-	elif c.input1["action"]=="win":
-		win[c.input1["x"]][c.input1["y"]]=num
+	if c.input1["action"]=="win":
+		win[c.input1["x"]][c.input1["y"]]="win"
+		turn = True
+		print "1a:", num, turn
+		c.input1 = {"action":"None"}
+	if c.input1["action"]=="lose":
+		boardh[c.input1["y"]][c.input1["x"]]=True
+		boardh[c.input1["y"]+1][c.input1["x"]]=True
+		boardv[c.input1["y"]][c.input1["x"]+1]=True
+		boardv[c.input1["y"]][c.input1["x"]]=True
+		win[c.input1["x"]][c.input1["y"]]="lose"
 		turn = False
-	elif c.input1["action"]=="lose":
-		if num==2:
-			win[c.input1["x"]][c.input1["y"]]=1
-		elif num==1:
-			win[c.input1["x"]][c.input1["y"]]=2
-		turn=True
+		print "2:", num, turn
+		c.input1 = {"action":"None"}
+	screen.blit(marker, (100,100))
 	for x in range(6):
 		for y in range(6):
-			if win[x][y]==num+1:
-				screen.blit(greenplayer if not num else blueplayer, (x*64, y*64))
-				print "win"
-			if win[x][y]!=num+1 and win[x][y]!=0:
-				print "lose"
-				screen.blit(greenplayer if num else blueplayer, (x*64, y*64))
+			if win[x][y]!=0:
+				if win[x][y]=="win":
+					screen.blit(marker, (x*64, y*64))
+				if win[x][y]=="lose":
+					screen.blit(othermarker, (x*64, y*64))
 	# This draws all of the lines other than the edges.
 	for x in range(6):
 		for y in range(6):
@@ -110,12 +119,21 @@ while 1:
 	screen.blit(hoverlineh if is_horizontal else hoverlinev, [xpos*64, ypos*64])
 
 	if pygame.mouse.get_pressed()[0] and turn==True:
+		alreadyplaced=False
 		if is_horizontal:
-			boardh[ypos][xpos] = True
+			if boardh[ypos][xpos]==True:
+				alreadyplaced=True
+			else:
+				boardh[ypos][xpos] = True
 		else:
-			boardv[ypos][xpos] = True
-		c.Send({"action":"place", "hv":"h" if is_horizontal else "v", "y":ypos, "x":xpos})
-		turn=False
+			if boardv[ypos][xpos]==True:
+				alreadyplaced=True
+			else:
+				boardv[ypos][xpos] = True
+		if not alreadyplaced:
+			c.Send({"action":"place", "hv":"h" if is_horizontal else "v", "y":ypos, "x":xpos})
+			turn=False
+			print "3:", num, turn
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			exit()
