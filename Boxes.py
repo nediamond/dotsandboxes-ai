@@ -1,4 +1,5 @@
-import pygame, client, math
+import pygame,  math
+from PodSixNet.Connection import connection, ConnectionListener
 from time import sleep
 #utility function for calculating the score from the board
 def calculate_score(board):
@@ -13,9 +14,22 @@ def calculate_score(board):
 	return me, otherplayer
 
 
-class BoxesGame():
+class BoxesGame(ConnectionListener):
 	def __init__(self):
-		self.c = client.Client(raw_input("Address of server (localhost:8000):"))
+		address=raw_input("Address of server (localhost:8000):")
+		try:
+			if not address:
+				host, port="localhost", 8000
+			else:
+				host,port=address.split(":")
+			self.Connect((host, int(port)))
+		except:
+			print "Error Connecting to Server"
+			print "Usage:", "host:port"
+			print "e.g.", "localhost:31425"
+			exit()
+		print "Boxes client started"
+		self.input1 = []
 		pygame.init()
 		pygame.font.init()
 		#load images
@@ -53,18 +67,18 @@ class BoxesGame():
 		self.clock=pygame.time.Clock()
 
 		#server responses
-		self.c.input1=[]
+		self.input1=[]
 
 		#while loop until other player joins
 		stop=True
 
 		while stop:
-			self.c.Loop()
-			for event in self.c.input1:
+			self.Loop()
+			for event in self.input1:
 				if event["action"]=="startgame":
 					self.num=event["player"]
 					self.gameid = event["gameid"]
-					self.c.input1=[]
+					self.input1=[]
 					stop=False
 			sleep(0.01)
 
@@ -92,6 +106,20 @@ class BoxesGame():
 
 		#did the user place a line between ten frames ago and now?
 		self.justplaced=10
+	def Loop(self):
+		connection.Pump()
+		self.Pump()
+	# built in stuff
+	def Network(self, data):
+		self.input1.append(data)
+	def Network_connected(self, data):
+		print "You are now connected to the server"
+	def Network_error(self, data):
+		print 'error:', data['error'][1]
+		connection.Close()
+	def Network_disconnected(self, data):
+		print 'Server disconnected'
+		exit()
 	def update(self):
 		self.justplaced-=1
 		# board full?
@@ -109,16 +137,16 @@ class BoxesGame():
 		self.clock.tick(60)
 
 		#loop client qand recieve data from server
-		self.c.Loop()
+		self.Loop()
 
 		#check queue for various server messages
-		for event in self.c.input1:
+		for event in self.input1:
 			#my turn
 			if event["action"]=="yourturn":
 				#torf = short for true or false
 				self.turn = event["torf"]
 				#remove item from queue
-				self.c.input1.remove(event)
+				self.input1.remove(event)
 			#placed line?
 			if event["action"]=="place":
 				#get attributes
@@ -132,7 +160,7 @@ class BoxesGame():
 				else:
 					self.boardv[y][x]=True
 				#remove item from queue
-				self.c.input1.remove(event)
+				self.input1.remove(event)
 			if event["action"]=="win":
 				#set owner map
 				self.owner[event["x"]][event["y"]]="win"
@@ -141,7 +169,7 @@ class BoxesGame():
 				self.boardh[event["y"]+1][event["x"]]=True
 				self.boardv[event["y"]][event["x"]+1]=True
 				#remove item from queue
-				self.c.input1.remove(event)
+				self.input1.remove(event)
 				#add one point to my score
 				self.me+=1
 			if event["action"]=="lose":
@@ -152,7 +180,7 @@ class BoxesGame():
 				self.boardh[event["y"]+1][event["x"]]=True
 				self.boardv[event["y"]][event["x"]+1]=True
 				#remove item from queue
-				self.c.input1.remove(event)
+				self.input1.remove(event)
 				#add one to other players score
 				self.otherplayer+=1
 			if event["action"]=="close":
@@ -251,7 +279,7 @@ class BoxesGame():
 			self.turn=False
 			if not alreadyplaced:
 				#send place of line to server
-				self.c.Send({"action":"place", "hv":"h" if is_horizontal else "v", "y":ypos, "x":xpos, "gameid": self.gameid, "player": self.num})
+				self.Send({"action":"place", "hv":"h" if is_horizontal else "v", "y":ypos, "x":xpos, "gameid": self.gameid, "player": self.num})
 		for event in pygame.event.get():
 			#quit if the quit button was pressed
 			if event.type == pygame.QUIT:
