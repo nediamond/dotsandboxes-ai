@@ -96,8 +96,8 @@ class BoxesGame():
 		self.justplaced-=1
 		# board full?
 		if self.me+self.otherplayer==36:
-			return 1
 			self.didiwin=True if self.me>self.otherplayer else False
+			return 1
 
 		#calculate score of board map
 		self.me, self.otherplayer=calculate_score(self.owner)
