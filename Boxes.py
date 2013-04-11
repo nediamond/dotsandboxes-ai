@@ -34,7 +34,7 @@ class BoxesGame(ConnectionListener):
 		pygame.font.init()
 		#load images
 		self.normallinev=pygame.image.load("normalline.png")
-		self.coollinev=pygame.image.load("coolline.png")
+		self.bar_donev=pygame.image.load("bar_done.png")
 		self.normallineh=pygame.transform.rotate(pygame.image.load("normalline.png"), -90)
 		self.hoverlinev=pygame.image.load("hoverline.png")
 		self.redindicator=pygame.image.load("redindicator.png")
@@ -44,8 +44,10 @@ class BoxesGame(ConnectionListener):
 		self.winningscreen=pygame.image.load("youwin.png")
 		self.gameover=pygame.image.load("gameover.png")
 		self.hoverlineh=pygame.transform.rotate(pygame.image.load("hoverline.png"), -90)
-		self.coollineh=pygame.transform.rotate(pygame.image.load("coolline.png"), -90)
-		width, height = 389, 500
+		self.bar_doneh=pygame.transform.rotate(pygame.image.load("bar_done.png"), -90)
+		self.score_panel=pygame.image.load("score_panel.png")
+		self.separators=pygame.image.load("separators.png")
+		width, height = 389, 489
 		#is it my turn
 		self.turn = True
 
@@ -139,6 +141,9 @@ class BoxesGame(ConnectionListener):
 		#loop client qand recieve data from server
 		self.Loop()
 
+		#draw the background for the bottom:
+		self.screen.blit(self.score_panel, [0, 389])
+
 		#check queue for various server messages
 		for event in self.input1:
 			#my turn
@@ -191,31 +196,35 @@ class BoxesGame(ConnectionListener):
 			for y in range(6):
 				if self.owner[x][y]!=0:
 					if self.owner[x][y]=="win":
-						self.screen.blit(self.marker, (x*64, y*64))
+						self.screen.blit(self.marker, (x*64+5, y*64+5))
 					if self.owner[x][y]=="lose":
-						self.screen.blit(self.othermarker, (x*64, y*64))
+						self.screen.blit(self.othermarker, (x*64+5, y*64+5))
 
 		# This draws all of the lines other than the edges.
 		for x in range(6):
 			for y in range(6):
 				if not self.boardh[y][x]:
-					self.screen.blit(self.normallineh, [(x)*64, (y)*64])
+					self.screen.blit(self.normallineh, [(x)*64+5, (y)*64])
 				else:
-					self.screen.blit(self.coollineh, [(x)*64, (y)*64])
+					self.screen.blit(self.bar_doneh, [(x)*64+5, (y)*64])
 				if not self.boardv[y][x]:
-					self.screen.blit(self.normallinev, [(x)*64, (y)*64])
+					self.screen.blit(self.normallinev, [(x)*64, (y)*64+5])
 				else:
-					self.screen.blit(self.coollinev, [(x)*64, (y)*64])
+					self.screen.blit(self.bar_donev, [(x)*64, (y)*64+5])
 		# This draws the bottom and right edges.
 		for edge in range(6):
 			if not self.boardh[6][edge]:
-				self.screen.blit(self.normallineh, [edge*64, 6*64])
+				self.screen.blit(self.normallineh, [edge*64+5, 6*64])
 			else:
-				self.screen.blit(self.coollineh, [edge*64, 6*64])
+				self.screen.blit(self.bar_doneh, [edge*64+5, 6*64])
 			if not self.boardv[edge][6]:
-				self.screen.blit(self.normallinev, [6*64, edge*64])
+				self.screen.blit(self.normallinev, [6*64, edge*64+5])
 			else:
-				self.screen.blit(self.coollinev, [6*64, edge*64])
+				self.screen.blit(self.bar_donev, [6*64, edge*64+5])
+		#draw separators
+		for x in range(7):
+			for y in range(7):
+				self.screen.blit(self.separators, [x*64, y*64])
 		#HUD
 		#create font
 		myfont = pygame.font.SysFont(None, 32)
@@ -255,7 +264,7 @@ class BoxesGame(ConnectionListener):
 		board=self.boardh if is_horizontal else self.boardv 
 		isoutofbounds=False
 		try: 
-			if not board[ypos][xpos]: self.screen.blit(self.hoverlineh if is_horizontal else self.hoverlinev, [xpos*64, ypos*64])
+			if not board[ypos][xpos]: self.screen.blit(self.hoverlineh if is_horizontal else self.hoverlinev, [xpos*64+5 if is_horizontal else xpos*64, ypos*64 if is_horizontal else ypos*64+5])
 		except:
 			isoutofbounds=True
 			pass
