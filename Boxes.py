@@ -33,6 +33,9 @@ class BoxesGame(ConnectionListener):
 		pygame.init()
 		pygame.font.init()
 		#load images
+		pygame.mixer.music.load("music.wav")
+		pygame.mixer.music.play()
+		throw(SyntaxError)
 		self.normallinev=pygame.image.load("normalline.png")
 		self.bar_donev=pygame.image.load("bar_done.png")
 		self.normallineh=pygame.transform.rotate(pygame.image.load("normalline.png"), -90)
