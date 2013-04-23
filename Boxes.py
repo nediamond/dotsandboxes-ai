@@ -29,13 +29,11 @@ class BoxesGame(ConnectionListener):
 			print "e.g.", "localhost:31425"
 			exit()
 		print "Boxes client started"
-		self.input1 = []
 		pygame.init()
 		pygame.font.init()
 		#load images
 		pygame.mixer.music.load("music.wav")
-		pygame.mixer.music.play()
-		throw(SyntaxError)
+		# pygame.mixer.music.play()
 		self.normallinev=pygame.image.load("normalline.png")
 		self.bar_donev=pygame.image.load("bar_done.png")
 		self.normallineh=pygame.transform.rotate(pygame.image.load("normalline.png"), -90)
@@ -72,21 +70,13 @@ class BoxesGame(ConnectionListener):
 		self.clock=pygame.time.Clock()
 
 		#server responses
-		self.input1=[]
 
 		#while loop until other player joins
-		stop=True
+		self.running=False
 
-		while stop:
+		while not self.running:
 			self.Loop()
-			for event in self.input1:
-				if event["action"]=="startgame":
-					self.num=event["player"]
-					self.gameid = event["gameid"]
-					self.input1=[]
-					stop=False
 			sleep(0.01)
-
 		#determine attributes from player #
 		if self.num==0:
 			self.turn=True
@@ -115,8 +105,45 @@ class BoxesGame(ConnectionListener):
 		connection.Pump()
 		self.Pump()
 	# built in stuff
-	def Network(self, data):
-		self.input1.append(data)
+	def Network_place(self, data):
+		#get attributes
+		x = data["x"]
+		y = data["y"]
+		hv = data["hv"]
+
+		#horizontal or vertical
+		if hv=="h":
+			self.boardh[y][x]=True
+		else:
+			self.boardv[y][x]=True
+	def Network_win(self, data):
+		#set owner map
+		self.owner[data["x"]][data["y"]]="win"
+		self.boardh[data["y"]][data["x"]]=True
+		self.boardv[data["y"]][data["x"]]=True
+		self.boardh[data["y"]+1][data["x"]]=True
+		self.boardv[data["y"]][data["x"]+1]=True
+		#add one point to my score
+		self.me+=1
+	def Network_startgame(self, data):
+		self.running=True
+		self.num=data["player"]
+		self.gameid=data["gameid"]
+	def Network_lose(self, data):
+		#set owner map to lost
+		self.owner[data["x"]][data["y"]]="lose"
+		self.boardh[data["y"]][data["x"]]=True
+		self.boardv[data["y"]][data["x"]]=True
+		self.boardh[data["y"]+1][data["x"]]=True
+		self.boardv[data["y"]][data["x"]+1]=True
+		#add one to other players score
+		self.otherplayer+=1
+	def Network_close(self, data):
+		exit()
+	def Network_yourturn(self, data):
+		#torf = short for true or false
+		self.turn = data["torf"]
+		#remove item from queue
 	def Network_connected(self, data):
 		print "You are now connected to the server"
 	def Network_error(self, data):
@@ -146,53 +173,6 @@ class BoxesGame(ConnectionListener):
 
 		#draw the background for the bottom:
 		self.screen.blit(self.score_panel, [0, 389])
-
-		#check queue for various server messages
-		for event in self.input1:
-			#my turn
-			if event["action"]=="yourturn":
-				#torf = short for true or false
-				self.turn = event["torf"]
-				#remove item from queue
-				self.input1.remove(event)
-			#placed line?
-			if event["action"]=="place":
-				#get attributes
-				x = event["x"]
-				y = event["y"]
-				hv = event["hv"]
-
-				#horizontal or vertical
-				if hv=="h":
-					self.boardh[y][x]=True
-				else:
-					self.boardv[y][x]=True
-				#remove item from queue
-				self.input1.remove(event)
-			if event["action"]=="win":
-				#set owner map
-				self.owner[event["x"]][event["y"]]="win"
-				self.boardh[event["y"]][event["x"]]=True
-				self.boardv[event["y"]][event["x"]]=True
-				self.boardh[event["y"]+1][event["x"]]=True
-				self.boardv[event["y"]][event["x"]+1]=True
-				#remove item from queue
-				self.input1.remove(event)
-				#add one point to my score
-				self.me+=1
-			if event["action"]=="lose":
-				#set owner map to lost
-				self.owner[event["x"]][event["y"]]="lose"
-				self.boardh[event["y"]][event["x"]]=True
-				self.boardv[event["y"]][event["x"]]=True
-				self.boardh[event["y"]+1][event["x"]]=True
-				self.boardv[event["y"]][event["x"]+1]=True
-				#remove item from queue
-				self.input1.remove(event)
-				#add one to other players score
-				self.otherplayer+=1
-			if event["action"]=="close":
-				exit()
 
 		# draw the owner map
 		for x in range(6):
