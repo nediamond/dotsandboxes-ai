@@ -321,8 +321,12 @@ class BoxesandGridsGame():
     
     
     def minimax(self):
-        
-        return [0,0,0];  
+        temp_h=self.boardh
+        temp_v=self.boardv
+        pos_moves = self.list_possible_moves(temp_h,temp_v);
+        ratings = map(lambda move: self.evaluate(move, temp_h, temp_v), pos_moves)
+
+        return pos_moves[ratings.index(max(ratings))]
     '''
     Chenge the alpha beta pruning function to return the optimal move .
     '''    
@@ -330,13 +334,58 @@ class BoxesandGridsGame():
         return [0,0,0];
     
     '''
-    Write down you own evaluationstrategy in the evaluation function 
+    Write down you own evaluation strategy in the evaluation function
+
+    +2 for each new completed square
+    +1 for each new half completed square
+    -2 for each new 3/4 completed square
     '''
-    
-    
-    
-    def evaluate(self):
-         return 0
+    def _evaluate(self, numsides):
+        if numsides == 4: return 2
+        if numsides == 2: return 1
+        if numsides == 3: return -2
+        if numsides == 1: return 0
+
+    def evaluate(self, move,state_h,state_v):
+        x = move[0]
+        y = move[1]
+        if move[2]==0: # Vertical, need to check top and bottom squares
+            left_square = 1
+            if y > 0 and x < len(state_h)-1 : 
+                left_square += state_h[x][y-1] + state_h[x+1][y-1] + state_v[x][y-1]
+            elif y > 0: 
+                left_square += state_h[x][y-1] + state_v[x][y-1]
+
+            right_square = 1
+            if (x < len(state_h) and y < len(state_h) and 
+                x < len(state_v) and y < len(state_v)):
+                right_square += state_h[x][y]
+                if x < len(state_h)-1:
+                    right_square += state_h[x+1][y]
+                if y < len(state_v)-1:
+                    right_square += state_v[x][y+1]
+
+            return self._evaluate(left_square) + self._evaluate(right_square)
+
+        elif move[2]==1:
+            top_square = 1 
+            if x > 0 and y < len(state_v)-1: 
+                top_square += state_h[x-1][y] + state_v[x-1][y] + state_v[x-1][y+1]
+            elif x > 0: 
+                top_square += state_h[x-1][y] + state_v[x-1][y]
+
+            bottom_square = 1
+            if (x < len(state_h) and y < len(state_h) and 
+                x < len(state_v) and y < len(state_v)):
+                bottom_square += state_v[x][y]
+                if x < len(state_h)-1:
+                    bottom_square += state_h[x+1][y]
+                if y < len(state_v)-1:
+                    bottom_square += state_v[x][y+1]
+
+            return self._evaluate(top_square) + self._evaluate(bottom_square)
+
+        raise Exception("Unexpected Orientation Value When Evaluating Move")
      
 bg=BoxesandGridsGame();
 while (bg.game_ends(bg.boardh,bg.boardv)==False):
@@ -345,4 +394,4 @@ while (bg.game_ends(bg.boardh,bg.boardv)==False):
     print 'Player2:score',bg.score_player2;
     time.sleep(2)
 time.sleep(10)
-pygame.quir()
+pygame.quit()
