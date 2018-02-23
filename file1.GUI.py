@@ -315,7 +315,7 @@ class BoxesandGridsGame():
 		'''
 		
 		## change the next line of minimax/ aplpha-beta pruning according to your input and output requirments
-		next_move=self.minimax(1, [], 1)[0];
+		next_move=self.minimax(1, 1)[0];
 		#next_move_alpha=self.alphabetapruning();
 		
 		
@@ -335,9 +335,14 @@ class BoxesandGridsGame():
 	#         if state_v[x][y] == False:
 
 	# needs to return just move, not tuple
-	def minimax(self, depth, move_queue, player_id):
-		for pmove in move_queue:
-			self.make_move_noviz(*pmove)
+	# todo: examine this guys helper functions (possible moves, incrmentscore)
+	# USE STACK NOT RECURSION!!
+	# Pruning strat: dynamic depth based on len(pos_moves)?
+	# Maybe evluate should always eval wrt to player two
+	# Deep cutoff, iterative deepening?
+	def minimax(self, depth, player_id, pmove=None):
+		if pmove:
+			self.make_move_noviz(pmove, (player_id+1)%2)
 
 		pos_moves = self.list_possible_moves(self.boardh,self.boardv)
 
@@ -353,15 +358,15 @@ class BoxesandGridsGame():
 			self.unmake_move_noviz(move, player_id)
 
 		else:
-			op_moves = map(lambda x: self.minimax(depth-1, move_queue+[(x,player_id)], (player_id+1)%2), pos_moves)
+			op_moves = map(lambda x: self.minimax(depth-1, (player_id+1)%2, pmove=x), pos_moves)
 			move = pos_moves[op_moves.index(min(op_moves, key=lambda x:x[1]))]
 			self.make_move_noviz(move, player_id)
 			score = self.score_player2 if player_id else self.score_player1
 			retval = (move, (score*4)+self.evaluate(move,self.boardh,self.boardv))
 			self.unmake_move_noviz(move, player_id)
 
-		for pmove in move_queue[::-1]:
-			self.unmake_move_noviz(*pmove)
+		if pmove:
+			self.unmake_move_noviz(pmove, (player_id+1)%2)
 
 		return retval
 
