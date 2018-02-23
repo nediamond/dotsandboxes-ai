@@ -334,7 +334,7 @@ class BoxesandGridsGame():
 	#             yield self.next_state([x, y, 1],temp_h,temp_v):
 	#         if state_v[x][y] == False:
 
-
+	# needs to return just move, not tuple
 	def minimax(self, depth, move_queue, player_id):
 		for pmove in move_queue:
 			self.make_move_noviz(*pmove)
