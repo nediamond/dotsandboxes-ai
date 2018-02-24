@@ -281,28 +281,18 @@ class BoxesandGridsGame():
 	def player1(self):
 		temp_h=self.boardh
 		temp_v=self.boardv
-		next_move=self.other_minimax();
-
-		#next_move_alpha=self.alphabetapruning();
-		
-		
-		self.make_move(next_move,0);
-		print 'move_made by player 1',next_move
 		# next_move=self.list_possible_moves(temp_h,temp_v);
-		
 		# best_move=next_move[0];
 		# best_score=0;
-		
 		# for move in next_move:
-			
-		#     temp_h,temp_v,score=self.next_state(move,temp_h,temp_v);
-			
-		#     if(score>best_score):
-		#         best_score=score;
-		#         best_move=move;
-		
-		
-		# self.make_move(best_move,0);
+		# 	temp_h,temp_v,score=self.next_state(move,temp_h,temp_v);
+		# 	if(score>best_score):
+		# 		best_score=score;
+		# 		best_move=move;
+		pos_moves = self.list_possible_moves(temp_h,temp_v);
+		ratings = map(lambda move: self.local_evaluate(move), pos_moves)
+		best_move = pos_moves[ratings.index(max(ratings))]
+		self.make_move(best_move,0);
 		
 	'''
 	You will make changes to the code from this part onwards
@@ -315,7 +305,7 @@ class BoxesandGridsGame():
 		'''
 		
 		## change the next line of minimax/ aplpha-beta pruning according to your input and output requirments
-		next_move=self.minimax(1, 1)[0];
+		next_move=self.minimax(1, 1);
 		#next_move_alpha=self.alphabetapruning();
 		
 		
@@ -326,102 +316,45 @@ class BoxesandGridsGame():
 	Write down the code for minimax to a certain depth do no implement minimax all the way to the final state. 
 	'''
 	
-	# def pos_next_state_generator(move,state_h,state_v):
-	#     temp_h=self.boardh
-	#     temp_v=self.boardv
-	#     for x,y in product(range(len(state_h)),range(len(state_v))):
-	#         if state_h[x][y] == False:
-	#             yield self.next_state([x, y, 1],temp_h,temp_v):
-	#         if state_v[x][y] == False:
+	def minimax(self, depth, player_id):
+		return self._minimax(depth, player_id)[0]
 
-	# needs to return just move, not tuple
-	# todo: examine this guys helper functions (possible moves, incrmentscore)
-	# USE STACK NOT RECURSION!!
-	# Pruning strat: dynamic depth based on len(pos_moves)?
-	# Maybe evluate should always eval wrt to player two
-	# Deep cutoff, iterative deepening?
-	def minimax(self, depth, player_id, pmove=None):
-		if pmove:
-			self.make_move_noviz(pmove, (player_id+1)%2)
+	# returns tuples of (move,value)
+	def _minimax(self, depth, player_id):
+		pos_moves = self.list_possible_moves(self.boardh, self.boardv)
 
-		pos_moves = self.list_possible_moves(self.boardh,self.boardv)
-
-		if len(pos_moves) == 1:
-			score = self.score_player2 if player_id else self.score_player1
-			retval = (pos_moves[0], (score*4)+4)
-
-		elif depth == 0:
-			move = max(pos_moves, key=lambda move: self.evaluate(move,self.boardh,self.boardv))
-			self.make_move_noviz(move, player_id)
-			score = self.score_player2 if player_id else self.score_player1
-			retval = (move, (score*4)+self.evaluate(move,self.boardh,self.boardv))
-			self.unmake_move_noviz(move, player_id)
-
+		if depth == 0 or len(pos_moves)<=2:
+			moves = map(lambda move: (move, self.evaluate(move, player_id)), pos_moves)
+			return max(moves, key=lambda x: x[1])
 		else:
-			op_moves = map(lambda x: self.minimax(depth-1, (player_id+1)%2, pmove=x), pos_moves)
-			move = pos_moves[op_moves.index(min(op_moves, key=lambda x:x[1]))]
-			self.make_move_noviz(move, player_id)
-			score = self.score_player2 if player_id else self.score_player1
-			retval = (move, (score*4)+self.evaluate(move,self.boardh,self.boardv))
-			self.unmake_move_noviz(move, player_id)
+			move_vals = []
+			for move in pos_moves:
+				self.make_move_noviz(move, player_id)
+				op_moves = self.list_possible_moves(self.boardh, self.boardv)
+				op_move_vals = []
+				for opmove in op_moves:
+					self.make_move_noviz(opmove, (player_id+1)%2)
+					op_move_val = self._minimax(depth-1, player_id)[1]
+					op_move_vals.append(op_move_val - self.local_evaluate(opmove))
+					self.unmake_move_noviz(opmove, (player_id+1)%2)
+				op_move_val = min(op_move_vals)
+				move_vals.append(op_move_val + self.local_evaluate(move))
+				self.unmake_move_noviz(move, player_id)
+			move_val = max(move_vals)
+			move = pos_moves[move_vals.index(move_val)]
+			return (move, move_val)
 
-		if pmove:
-			self.unmake_move_noviz(pmove, (player_id+1)%2)
-
-		return retval
-
-	def make_move_noviz(self, move, player_id):
-		self.make_move_noscore(move)
-		if(player_id==0):
-			self.score_player1 += self.increment_score(move,self.boardh,self.boardv)
-		if(player_id==1):
-			self.score_player2 += self.increment_score(move,self.boardh,self.boardv)
-
-
-	def unmake_move_noviz(self, move, player_id):
-		self.unmake_move(move)
-		if(player_id==0):
-			self.score_player1 -= self.increment_score(move,self.boardh,self.boardv)
-		if(player_id==1):
-			self.score_player2 -= self.increment_score(move,self.boardh,self.boardv)
-
-
-	def other_minimax(self):
-		temp_h=self.boardh
-		temp_v=self.boardv
-		pos_moves = self.list_possible_moves(temp_h,temp_v);
-		ratings = map(lambda move: self.evaluate(move, temp_h, temp_v), pos_moves)
-
-		return pos_moves[ratings.index(max(ratings))]
-	# def other_minimax(self):
-	#     temp_h=self.boardh
-	#     temp_v=self.boardv
-	#     pos_moves = self.list_possible_moves(temp_h,temp_v);
-	#     best_moves, ratings = zip(*self.alphabetapruning(pos_moves, ratings))
-	#     exp_scores = []
-	#     for move in best_moves:
-	#         move_q = [move]
-	#         pos_moves.remove(move)
-
-	#         for _move in move_q:
-	#             pos_moves.append(_move)
-
-	#     return choice(best_moves)
-	# '''
-	# Chenge the alpha beta pruning function to return the optimal move .
-	# '''    
-	# def alphabetapruning(self, moves, ratings):
-	# 	max_rating = max(ratings)
-	# 	#best_moves = filter(lambda x: x[1]>=max_rating-2, zip(moves, ratings))
-	# 	best_moves = filter(lambda x: x[1]==max_rating, zip(moves, ratings))
-
-	# 	return best_moves;
+	'''
+	Chenge the alpha beta pruning function to return the optimal move .
+	'''    
+	def alphabetapruning(self):
+		return [0,0,0];
 	
 	'''
 	Write down you own evaluation strategy in the evaluation function
 
 	open to tweaking:
-	+3 for each new completed square
+	+4 for each new completed square
 	+1 for each new half completed square
 	-2 for each new 3/4 completed square
 	'''
@@ -429,10 +362,24 @@ class BoxesandGridsGame():
 		if numsides == 4: return 4
 		if numsides == 2: return 1
 		if numsides == 3: return -2 # is making 2 threes better than making 1 three?
-		if numsides == 1: return 0
+		if numsides <= 1: return 0
 
 	# can simplify/remove if statements here
-	def evaluate(self, move,state_h,state_v):
+	def evaluate(self, move, player_id):
+		self.make_move_noviz(move, player_id)
+		if player_id:
+			score = self.score_player2
+			op_score = self.score_player1
+		else:
+			score = self.score_player1
+			op_score = self.score_player2
+		self.unmake_move_noviz(move, player_id)
+
+		return self._evaluate(4)*(score-op_score) + self.local_evaluate(move)
+
+	def local_evaluate(self, move):
+		state_h = self.boardh
+		state_v = self.boardv
 		x = move[0]
 		y = move[1]
 		if move[2]==0: # Vertical, need to check top and bottom squares
@@ -471,6 +418,21 @@ class BoxesandGridsGame():
 		except NameError:
 			raise Exception("Unexpected Orientation Value When Evaluating Move")
 
+
+	def make_move_noviz(self, move, player_id):
+		self.make_move_noscore(move)
+		if(player_id==0):
+			self.score_player1 += self.increment_score(move,self.boardh,self.boardv)
+		if(player_id==1):
+			self.score_player2 += self.increment_score(move,self.boardh,self.boardv)
+
+	def unmake_move_noviz(self, move, player_id):
+		self.unmake_move(move)
+		if(player_id==0):
+			self.score_player1 -= self.increment_score(move,self.boardh,self.boardv)
+		if(player_id==1):
+			self.score_player2 -= self.increment_score(move,self.boardh,self.boardv)
+
 	def make_move_noscore(self, move):
 		xpos=move[0];
 		ypos=move[1];
@@ -488,37 +450,12 @@ class BoxesandGridsGame():
 			self.boardh[xpos][ypos]=False;
 		if(move[2]==0):
 			self.boardv[xpos][ypos]=False;
-
-	# Independently evaluates a set of moves after another set of moves have been applied
-	def evaluate_moves_after_moves(self, prev_move_queue, movelist, state_h, state_v):
-		for pmove in prev_move_queue:
-			self.make_move_noscore(pmove)
-
-		retval = map(lambda move: self.evaluate(move, state_h, state_v), movelist)
-
-		for pmove in prev_move_queue:
-			self.unmake_move(pmove)
-
-		return retval
-
-	def list_moves_after_moves(self, prev_move_queue, state_h, state_v):
-		for pmove in prev_move_queue:
-			self.make_move_noscore(pmove)
-		
-		retval = self.list_possible_moves(state_h, state_v)
-
-		for pmove in prev_move_queue:
-			self.unmake_move(pmove)
-
-		return retval
-
-
 	 
 bg=BoxesandGridsGame();
 while (bg.game_ends(bg.boardh,bg.boardv)==False):
 	bg.update();
-	print 'Player1 score:',bg.score_player1;
-	print 'Player2 score:',bg.score_player2;
+	print 'Player1 :score',bg.score_player1;
+	print 'Player2:score',bg.score_player2;
 	time.sleep(2)
 time.sleep(10)
 pygame.quit()
